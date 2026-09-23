@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AquaPass.Tests/AquaPass.Tests.csproj" Id="a0f5ab15-73db-4400-a97e-888bddb5ba09" />
+  <Project Path="AquaPass/AquaPass.csproj" />
+</Solution>
