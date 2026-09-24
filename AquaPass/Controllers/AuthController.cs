@@ -27,12 +27,12 @@ public class AuthController : ControllerBase
         if (response == null)
         {
             _logger.LogWarning("Login failed for staff {Email}", dto.Email);
+
             return Unauthorized(new { message = "Невірний email або пароль." });
         }
 
         _logger.LogInformation("Login succeeded for staff {Email} with role {Role}", response.Email, response.Role);
+
         return Ok(response);
     }
-
-    
 }

@@ -4,9 +4,9 @@
     {
         public Guid Id { get; set; }
         public Guid OrderId { get; set; }
-        public Guid EntranceTariffId { get; set; } // Вхідний тариф (EntranceTicketAdult або EntranceTicketChild)
+        public Guid EntranceTariffId { get; set; } // (EntranceTicketAdult or EntranceTicketChild)
         public decimal EntrancePrice { get; set; }
-        public string TicketCode { get; set; } = string.Empty; // Унікальний код для персонального QR-коду гостя
+        public string TicketCode { get; set; } = string.Empty;
         public string Status { get; set; } = "Active"; // "Active", "Used", "Cancelled"
         public Guid? SunbedId { get; set; }
         public decimal? SunbedPrice { get; set; }

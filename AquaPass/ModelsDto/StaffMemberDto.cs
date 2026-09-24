@@ -6,5 +6,5 @@
     string Email,
     string Role,
     DateTime CreatedAt
-);
+    );
 }

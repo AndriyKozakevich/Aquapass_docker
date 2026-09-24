@@ -19,8 +19,8 @@ namespace AquaPass
         public static async Task Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
-        .WriteTo.Console()
-        .WriteTo.File(
+               .WriteTo.Console()
+               .WriteTo.File(
             path: "Logs/aquapass-.log",
             rollingInterval: RollingInterval.Day,
             shared: true)
@@ -37,11 +37,9 @@ namespace AquaPass
                     .ReadFrom.Services(services)
                     .Enrich.FromLogContext());
 
-                // 1. Підключення бази даних PostgreSQL
                 builder.Services.AddDbContext<AppDbContext>(options =>
                     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-                // 1. Підключення бази даних Redis
                 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
                 {
                     var configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
@@ -49,7 +47,6 @@ namespace AquaPass
                     return ConnectionMultiplexer.Connect(configuration);
                 });
 
-                // 2. Реєстрація сервісів (DI)
                 builder.Services.AddControllers()
         .AddJsonOptions(options =>
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -63,12 +60,10 @@ namespace AquaPass
                 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
                 builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
                 builder.Services.AddScoped<IEmailService, EmailService>();
-                // SunbedHoldService is safe as singleton because it uses a singleton IConnectionMultiplexer
-                // Register the interface so consumers depending on ISunbedHoldService can be resolved
+                
                 builder.Services.AddSingleton<ISunbedHoldService, SunbedHoldService>();
                 builder.Services.AddSignalR();
 
-                // 3. Налаштування JWT
                 var jwtKey = builder.Configuration["Jwt:Key"] ?? "MineSuperSecretKeyThatIsAtLeast32BytesLong!";
 
                 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -86,7 +81,6 @@ namespace AquaPass
                         };
                     });
 
-                // 4. Налаштування Swagger UI з підтримкою авторизації (Bearer)
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Services.AddSwaggerGen(options =>
                 {
@@ -123,15 +117,14 @@ namespace AquaPass
                     });
                 });
 
-                // 1. ДОДАЙ ЦЕ перед рядком var app = builder.Build();
                 builder.Services.AddCors(options =>
                 {
                     options.AddPolicy("AllowFrontend", policy =>
                     {
-                        policy.WithOrigins("http://localhost:3000") // Дозволяємо твій Next.js
+                        policy.WithOrigins("http://localhost:3000") 
                               .AllowAnyHeader()
                               .AllowAnyMethod()
-                              .AllowCredentials(); // Якщо будеш передавати кукі/токени
+                              .AllowCredentials(); 
                     });
                 });
 
@@ -150,14 +143,11 @@ namespace AquaPass
 
                     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-                    // Автоматично створює головного адміна, якщо його немає
                     await DbInitializer.SeedAdminAsync(context, config);
                 }
 
-                // 2. ДОДАЙ ЦЕ після app.UseRouting() і ПЕРЕД app.UseAuthorization();
                 app.UseCors("AllowFrontend");
 
-                // 5. Middleware
                 if (app.Environment.IsDevelopment())
                 {
                     app.UseSwagger();
@@ -167,9 +157,6 @@ namespace AquaPass
                         c.RoutePrefix = string.Empty;
                     });
                 }
-
-                //app.UseHttpsRedirection();
-
                 app.UseAuthentication();
                 app.UseAuthorization();
 

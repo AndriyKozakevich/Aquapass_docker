@@ -18,7 +18,12 @@ namespace AquaPass.Controllers
         private readonly ISunbedHoldService _holdService;
         private readonly ILogger<SunbedController> _logger;
 
-        public SunbedController(SunbedService sunbedService, IHubContext<SunbedHub> hubContext, ISunbedHoldService holdService, ILogger<SunbedController> logger)
+        public SunbedController(
+            SunbedService sunbedService,
+            IHubContext<SunbedHub> hubContext,
+            ISunbedHoldService holdService,
+            ILogger<SunbedController> logger
+            )
         {
             _sunbedService = sunbedService;
             _hubContext = hubContext;
@@ -29,6 +34,7 @@ namespace AquaPass.Controllers
         #region GET Operations
 
         // GET: api/Sunbed
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -38,6 +44,7 @@ namespace AquaPass.Controllers
         }
 
         // GET: api/Sunbed/{id}
+        [AllowAnonymous]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -56,6 +63,7 @@ namespace AquaPass.Controllers
         }
 
         // GET: api/Sunbed/available
+        [AllowAnonymous]
         [HttpGet("available")]
         public async Task<IActionResult> GetAvailable(DateTime visitDate)
         {
@@ -65,18 +73,22 @@ namespace AquaPass.Controllers
         }
 
         // GET: api/Sunbed/row/{row}
+        [AllowAnonymous]
         [HttpGet("row/{row}")]
         public async Task<IActionResult> GetByRow(string row)
         {
             var sunbeds = await _sunbedService.GetByRowAsync(row);
+
             return Ok(sunbeds);
         }
 
         // GET: api/Sunbed/search?row=A&number=5
+        [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> GetByRowAndNumber([FromQuery] string row, [FromQuery] int number)
         {
             var sunbeds = await _sunbedService.GetByRowAndNumberAsync(row, number);
+
             return Ok(sunbeds);
         }
 
@@ -85,7 +97,7 @@ namespace AquaPass.Controllers
         #region POST Operations
 
         // POST: api/Sunbed
-        //[Authorize]
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] SunbedCreateDto dto)
         {
@@ -95,6 +107,7 @@ namespace AquaPass.Controllers
         }
 
         // POST: api/Sunbed/range?row=A&count=10
+        [Authorize]
         [HttpPost("range")]
         public async Task<IActionResult> CreateRange([FromQuery] string row, [FromQuery] int count)
         {
@@ -108,11 +121,16 @@ namespace AquaPass.Controllers
         #region PUT / PATCH Operations
 
         // PUT: api/Sunbed/{id}
+        [Authorize]
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] SunbedUpdateDto dto)
         {
             var invalid = this.ValidateId(id, nameof(id));
-            if (invalid != null) return invalid;
+            if (invalid != null)
+            {
+                return invalid;
+            }
+
             try
             {
                 await _sunbedService.UpdateAsync(id, dto);
@@ -130,6 +148,7 @@ namespace AquaPass.Controllers
         #region DELETE Operations
 
         // DELETE: api/Sunbed/{id}
+        [Authorize]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -147,12 +166,15 @@ namespace AquaPass.Controllers
 
         #endregion
         [HttpPost("{id:guid}/hold")]
-        public async Task<IActionResult> HoldSunbed(
-    Guid id,
-    [FromBody] HoldSunbedRequest req)
+        public async Task<IActionResult> HoldSunbed(Guid id, [FromBody] HoldSunbedRequest req)
         {
             var invalid = this.ValidateId(id, nameof(id));
-            if (invalid != null) return invalid;
+
+            if (invalid != null)
+            {
+                return invalid;
+            }
+
             if (string.IsNullOrWhiteSpace(req.HoldToken))
             {
                 return BadRequest(new { message = "Необхідний holdToken сесії" });
@@ -177,14 +199,19 @@ namespace AquaPass.Controllers
             return Ok(new { message = "Шезлонг заблоковано на 5 хвилин", expiresMinutes = 5 });
         }
 
+        [AllowAnonymous]
         [HttpPost("{id:guid}/release-hold")]
         public async Task<IActionResult> ReleaseHold(Guid id, [FromBody] HoldSunbedRequest req)
         {
             var invalid = this.ValidateId(id, nameof(id));
-            if (invalid != null) return invalid;
+
+            if (invalid != null)
+            {
+                return invalid;
+            }
+
             await _holdService.ReleaseHoldAsync(id, req.VisitDate, req.HoldToken);
 
-            // Сповіщаємо, що шезлонг знову вільний
             var dateGroup = req.VisitDate.ToString("yyyy-MM-dd");
             await _hubContext.Clients.Group(dateGroup).SendAsync("SunbedStatusUpdated", new
             {
