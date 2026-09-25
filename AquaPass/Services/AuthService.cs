@@ -30,6 +30,7 @@ public class AuthService : IAuthService
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
             _logger.LogWarning("Failed login attempt for email {Email}", dto.Email);
+
             return null;
         }
 
@@ -41,9 +42,14 @@ public class AuthService : IAuthService
     
     private StaffAuthResponseDto GenerateJwtToken(Staff staff)
     {
-        var jwtKey = _config["Jwt:Key"] ?? "SUPER_SECRET_AQUAPASS_KEY_123456789_LONG_ENOUGH";
-        var issuer = _config["Jwt:Issuer"] ?? "AquaPassServer";
-        var audience = _config["Jwt:Audience"] ?? "AquaPassClient";
+        var jwtKey = _config["Jwt:Key"] ??
+            throw new InvalidOperationException("Jwt:Key is not configured.");
+
+        var issuer = _config["Jwt:Issuer"] ??
+            throw new InvalidOperationException("Jwt:Key is not configured.");
+
+        var audience = _config["Jwt:Audience"] ??
+            throw new InvalidOperationException("Jwt:Key is not configured.");
 
         var expires = DateTime.UtcNow.AddDays(7);
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));

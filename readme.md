@@ -1,4 +1,4 @@
-# AquaPass — Pool Complex Management & Ticket Booking System
+# AquaPass — Pool Booking & Ticket Management Platform
 
 **AquaPass** is a high-concurrency booking and ticket verification platform built for outdoor pool complexes and resorts. It automates online sunbed selection, real-time ticket sales, payment processing, transactional email dispatch with PDF tickets, and staff entry validation.
 
@@ -35,7 +35,6 @@ The system is designed to eliminate double-booking race conditions during peak s
 
 3. **Instant Ticket & PDF Generation:**
    - Dynamically generated vector PDF passes featuring secure, high-contrast QR codes.
-   - Automatic dispatch to customer email via background SMTP service.
 
 4. **Cashier & Turnstile Entry Validation:**
    - Dedicated authenticated dashboard for complex staff (`Cashier` / `Admin`).
@@ -72,8 +71,8 @@ Running the entire platform requires only Docker Desktop installed.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/AndriyKozakevich/Aquapass_docker
-cd aquapass
+git clone https://github.com/AndriyKozakevich/Aquapass_docker.git
+cd Aquapass_docker
 ```
 
 ### 2. Launch all services
@@ -81,7 +80,7 @@ cd aquapass
 Run the following command from the root directory (where `docker-compose.yml` is located):
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 Docker will:
