@@ -7,7 +7,6 @@ public static class DbInitializer
 {
     public static async Task SeedAdminAsync(AppDbContext context, IConfiguration config)
     {
-        // Переконуємося, що в базі є хоча б один адміністратор
         var adminExists = await context.Staffs.AnyAsync(u => u.Role == "Admin");
 
         if (adminExists)

@@ -30,7 +30,6 @@ namespace AquaPass
         {
             base.OnModelCreating(modelBuilder);
 
-            // Вказуємо PostgreSQL генерувати UUID за замовчуванням
             modelBuilder.Entity<Staff>()
                 .Property(u => u.Id)
                 .HasDefaultValueSql("gen_random_uuid()");
@@ -39,7 +38,6 @@ namespace AquaPass
                 .Property(s => s.Id)
                 .HasDefaultValueSql("gen_random_uuid()");
 
-            // Налаштування таблиці Zone
             modelBuilder.Entity<Zone>(entity =>
             {
                 entity.HasKey(z => z.Id);
@@ -48,7 +46,6 @@ namespace AquaPass
                       .HasMaxLength(100);
             });
 
-            // Налаштування таблиці Tariff
             modelBuilder.Entity<Tariff>(entity =>
             {
                 entity.HasKey(t => t.Id);
@@ -74,7 +71,6 @@ namespace AquaPass
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Фіксовані статичні ідентифікатори для Seed Data
             var vipZoneId = Guid.Parse("11111111-1111-1111-1111-111111111111");
             var standardZoneId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 

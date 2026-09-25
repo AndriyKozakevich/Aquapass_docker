@@ -28,6 +28,7 @@ namespace AquaPass.Controllers
         public async Task<IActionResult> GetAll()
         {
             var tariffs = await _service.GetAllAsync();
+
             return Ok(tariffs);
         }
 
@@ -35,10 +36,20 @@ namespace AquaPass.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-        var invalid = this.ValidateId(id, nameof(id));
-        if (invalid != null) return invalid;
+            var invalid = this.ValidateId(id, nameof(id));
+
+            if (invalid != null)
+            {
+                return invalid;
+            }
+
             var tariff = await _service.GetByIdAsync(id);
-            if (tariff == null) return NotFound();
+
+            if (tariff == null)
+            {
+                return NotFound();
+            }
+
             return Ok(tariff);
         }
 
@@ -64,7 +75,10 @@ namespace AquaPass.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] TariffCreateDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             var tariff = new Tariff
             {
@@ -95,9 +109,17 @@ namespace AquaPass.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] TariffUpdateDto dto)
         {
-        var invalid = this.ValidateId(id, nameof(id));
-        if (invalid != null) return invalid;
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var invalid = this.ValidateId(id, nameof(id));
+
+            if (invalid != null)
+            {
+                return invalid;
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             try
             {
@@ -112,7 +134,6 @@ namespace AquaPass.Controllers
         }
 
         // DELETE: api/tariffs/{id}
-        //[Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

@@ -2,10 +2,8 @@
 # 1. Environment & Secrets (Docker / .NET / Next.js)
 # ==========================================
 .env
-.env*.local
-.env.development
-.env.production
-.env.test
+.env.*
+!.env.example
 *.pem
 *.key
 *.pfx

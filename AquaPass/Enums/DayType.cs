@@ -2,7 +2,7 @@
 {
     public enum DayType
     {
-        Weekday, // Будній
-        Weekend  // Вихідний
+        Weekday, 
+        Weekend
     }
 }

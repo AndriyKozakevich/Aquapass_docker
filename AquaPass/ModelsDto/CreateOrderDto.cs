@@ -21,7 +21,6 @@ namespace AquaPass.ModelsDto
         [Phone]
         public string CustomerPhone { get; set; } = string.Empty;
 
-        // Список обраних товарів/послуг
         [Required]
         [MinLength(1, ErrorMessage = "Замовлення має містити хоча б один товар")]
         public List<OrderItemRequestDto> Items { get; set; } = new();

@@ -19,7 +19,13 @@ public class PaymentsController : ControllerBase
     private readonly AppDbContext _context;
     private readonly ILogger<PaymentsController> _logger;
 
-    public PaymentsController(IMonobankPaymentService monobankService, IEmailService emailService, ITicketPdfGenerator pdfGenerator, AppDbContext context, ILogger<PaymentsController> logger)
+    public PaymentsController(
+        IMonobankPaymentService monobankService,
+        IEmailService emailService,
+        ITicketPdfGenerator pdfGenerator,
+        AppDbContext context,
+        ILogger<PaymentsController> logger
+        )
     {
         _monobankService = monobankService;
         _emailService = emailService;
@@ -28,14 +34,17 @@ public class PaymentsController : ControllerBase
         _logger = logger;
     }
 
-    // Endpoint for frontend to call after redirect (e.g., when Monobank redirect includes paid=true)
-    // Marks order as paid and sends confirmation email. Use POST from frontend: POST /api/payments/confirm/{orderId}
     [AllowAnonymous]
     [HttpPost("confirm/{orderId:guid}")]
     public async Task<IActionResult> ConfirmPayment(Guid orderId)
     {
         var invalid = this.ValidateId(orderId, nameof(orderId));
-        if (invalid != null) return invalid;
+
+        if (invalid != null)
+        {
+            return invalid;
+        }
+
         try
         {
             _logger.LogInformation("ConfirmPayment called for order {OrderId}", orderId);
@@ -44,11 +53,18 @@ public class PaymentsController : ControllerBase
                 .Include(o => o.Tickets)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
-            if (order == null) return NotFound(new { message = "Order not found" });
+            if (order == null)
+            {
+                return NotFound(new { message = "Order not found" });
+            }
 
-            if (order.Status == "Paid") return Ok(new { message = "Already paid" });
+            if (order.Status == "Paid")
+            {
+                return Ok(new { message = "Already paid" });
+            }
 
             order.Status = "Paid";
+
             foreach (var ticket in order.Tickets)
             {
                 ticket.Status = "Active";
@@ -71,19 +87,28 @@ public class PaymentsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error confirming payment for order {OrderId}", orderId);
+
             return BadRequest(new { success = false, error = ex.Message });
         }
     }
 
-    // 1. Клієнт викликає для отримання посилання на оплату
     [AllowAnonymous]
     [HttpPost("create-checkout/{orderId:guid}")]
     public async Task<IActionResult> CreateCheckout(Guid orderId)
     {
         var invalid = this.ValidateId(orderId, nameof(orderId));
-        if (invalid != null) return invalid;
+
+        if (invalid != null)
+        {
+            return invalid;
+        }
+
         var order = await _context.Orders.FindAsync(orderId);
-        if (order == null) return NotFound(new { message = "Замовлення не знайдено" });
+
+        if (order == null)
+        {
+            return NotFound(new { message = "Замовлення не знайдено" });
+        }
 
         var invoice = await _monobankService.CreateInvoiceAsync(
             order.Id,
@@ -99,7 +124,6 @@ public class PaymentsController : ControllerBase
         return Ok(new { paymentUrl = invoice.PageUrl });
     }
 
-    // 2. Monobank стукає сюди, коли клієнт оплатив карткою
     [AllowAnonymous]
     [HttpPost("mono-webhook")]
     public async Task<IActionResult> MonoWebhook([FromBody] MonoWebhookPayload payload)
@@ -117,6 +141,7 @@ public class PaymentsController : ControllerBase
                 if (order != null && order.Status != "Paid")
                 {
                     order.Status = "Paid";
+
                     foreach (var ticket in order.Tickets)
                     {
                         ticket.Status = "Active";
@@ -139,7 +164,6 @@ public class PaymentsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing MonoWebhook payload");
-            // swallow exception to ensure 200 response to the gateway, but log for investigation
         }
 
         return Ok();
@@ -151,11 +175,10 @@ public class PaymentsController : ControllerBase
     {
         try
         {
-            // Простий порожній або текстовий масив байтів для перевірки вкладення
             byte[] dummyPdf = System.Text.Encoding.UTF8.GetBytes("%PDF-1.4 тестовий файл");
 
             await emailService.SendOrderConfirmationAsync(
-                toEmail: "andriy7work@gmail.com", // відправляємо тестовий лист самі собі
+                toEmail: "andriy7work@gmail.com", 
                 customerName: "Андрій",
                 orderNumber: "TEST-001",
                 pdfBytes: dummyPdf
