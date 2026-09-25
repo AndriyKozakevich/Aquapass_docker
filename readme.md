@@ -58,6 +58,11 @@ When running via Docker, all services bind to standard local ports:
 | **PostgreSQL Database** | `localhost:5432` | DB: `aquapass_db` (User: `postgres` / Pass: `postgres`) |
 | **Redis Cache** | `localhost:6379` | Distributed cache & atomic locks |
 
+## Pre-seeded administrator account for testing protected API endpoints in Swagger and accessing the cashier/management dashboard:
+
+Email :admin@aquapass.com
+Password : Password
+Role : admin
 ---
 
 ## Quick Start with Docker Compose
