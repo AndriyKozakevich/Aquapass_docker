@@ -16,14 +16,14 @@ namespace AquaPass.Controllers;
 [Route("api/[controller]")]
 public class PaymentsController : ControllerBase
 {
-    private readonly IMonobankPaymentService _monobankService;
+    private readonly IPaymentService _monobankService;
     private readonly IEmailService _emailService;
     private readonly ITicketPdfGenerator _pdfGenerator;
     private readonly AppDbContext _context;
     private readonly ILogger<PaymentsController> _logger;
 
     public PaymentsController(
-        IMonobankPaymentService monobankService,
+        IPaymentService monobankService,
         IEmailService emailService,
         ITicketPdfGenerator pdfGenerator,
         AppDbContext context,
