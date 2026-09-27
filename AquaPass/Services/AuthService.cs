@@ -46,10 +46,10 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Jwt:Key is not configured.");
 
         var issuer = _config["Jwt:Issuer"] ??
-            throw new InvalidOperationException("Jwt:Key is not configured.");
+            throw new InvalidOperationException("Jwt:Issuer is not configured.");
 
         var audience = _config["Jwt:Audience"] ??
-            throw new InvalidOperationException("Jwt:Key is not configured.");
+            throw new InvalidOperationException("Jwt:Audience is not configured.");
 
         var expires = DateTime.UtcNow.AddDays(7);
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));

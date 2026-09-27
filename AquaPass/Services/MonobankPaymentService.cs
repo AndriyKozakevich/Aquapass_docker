@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AquaPass.Services
 {
-    public class MonobankPaymentService : IMonobankPaymentService
+    public class MonobankPaymentService : IPaymentService
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _config;
@@ -23,18 +23,6 @@ namespace AquaPass.Services
         {
             var token = _config["Monobank:Token"];
             var redirectUrl = _config["Monobank:RedirectUrl"] ?? "http://localhost:3000/booking";
-
-            // Якщо токен тестовий, відсутній або для розробки — симулюмо успішний інвойс
-            if (string.IsNullOrWhiteSpace(token) || token.Contains("YOUR_MONOBANK") || token.StartsWith("test_"))
-            {
-                _logger.LogInformation("Creating mock Monobank invoice for order {OrderId} amount {AmountCents} mode {Mode}", orderId, (int)(amount * 100), "mock");
-                return new MonoCreateInvoiceResponse
-                {
-                    InvoiceId = Guid.NewGuid().ToString("N"),
-                    // Перенаправляємо назад на сторінку успішного бронювання
-                    PageUrl = $"{redirectUrl}?orderId={orderId}&paid=true"
-                };
-            }
 
             var requestBody = new MonoCreateInvoiceRequest
             {

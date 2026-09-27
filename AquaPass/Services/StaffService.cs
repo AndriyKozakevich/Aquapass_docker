@@ -112,7 +112,8 @@ public class StaffService : IStaffService
 
     private string GenerateJwtToken(Staff staff, DateTime expiresAt)
     {
-        var jwtKey = _config["Jwt:Key"] ?? "AQUAPASS_SUPER_SECRET_JWT_KEY_MIN_32_CHARS_LONG_2026";
+        var jwtKey = _config["Jwt:Key"] ?? 
+            throw new InvalidOperationException("Jwt:Key is not configured.");
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
@@ -125,8 +126,10 @@ public class StaffService : IStaffService
         };
 
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"] ?? "AquaPassServer",
-            audience: _config["Jwt:Audience"] ?? "AquaPassClient",
+            issuer: _config["Jwt:Issuer"] ??
+                throw new InvalidOperationException("Jwt:Issuer is not configured."),
+            audience: _config["Jwt:Audience"] ??
+                throw new InvalidOperationException("Jwt:Audience is not configured."),
             claims: claims,
             expires: expiresAt,
             signingCredentials: credentials
