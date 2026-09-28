@@ -41,8 +41,8 @@ export default function ScannerPage() {
 
   // Допоміжна функція для формування заголовків авторизації
   const getAuthHeaders = (): HeadersInit => {
-    // Якщо токен зберігається під іншою назвою (напр. 'accessToken' чи 'jwt'), змінити тут:
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    // Змінено з "token" на "staff_token"
+    const token = typeof window !== "undefined" ? localStorage.getItem("staff_token") : null;
     return {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
