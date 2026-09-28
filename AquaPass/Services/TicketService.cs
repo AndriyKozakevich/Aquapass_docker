@@ -11,10 +11,10 @@ public class TicketService : ITicketService
     private readonly AppDbContext _context;
     private readonly ILogger<TicketService> _logger;
 
-    public TicketService(AppDbContext context, ILogger<TicketService> logger)
+    public TicketService(AppDbContext context, ILogger<TicketService>? logger = null)
     {
         _context = context;
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TicketService>.Instance;
     }
 
     public async Task<OrderValidationDto?> GetOrderByTicketCodeAsync(string ticketCode)

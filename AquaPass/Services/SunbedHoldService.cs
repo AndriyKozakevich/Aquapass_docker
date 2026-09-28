@@ -9,7 +9,7 @@ public class SunbedHoldService : ISunbedHoldService
     private readonly IServer _server;
     private readonly ILogger<SunbedHoldService> _logger;
 
-    public SunbedHoldService(IConnectionMultiplexer redis, ILogger<SunbedHoldService> logger)
+    public SunbedHoldService(IConnectionMultiplexer redis, ILogger<SunbedHoldService>? logger = null)
     {
         _redis = redis.GetDatabase();
         var endpoint = redis.GetEndPoints().FirstOrDefault();
@@ -17,7 +17,7 @@ public class SunbedHoldService : ISunbedHoldService
             throw new InvalidOperationException("No Redis endpoints available. Check your Redis configuration.");
 
         _server = redis.GetServer(endpoint);
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<SunbedHoldService>.Instance;
     }
 
     private string BuildKey(Guid sunbedId, DateTime visitDate)

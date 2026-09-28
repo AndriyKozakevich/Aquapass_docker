@@ -12,11 +12,11 @@ namespace AquaPass.Services
 
         private readonly ILogger<MonobankPaymentService> _logger;
 
-        public MonobankPaymentService(HttpClient httpClient, IConfiguration config, ILogger<MonobankPaymentService> logger)
+        public MonobankPaymentService(HttpClient httpClient, IConfiguration config, ILogger<MonobankPaymentService>? logger = null)
         {
             _httpClient = httpClient;
             _config = config;
-            _logger = logger;
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<MonobankPaymentService>.Instance;
         }
 
         public async Task<MonoCreateInvoiceResponse?> CreateInvoiceAsync(Guid orderId, decimal amount, string destination)

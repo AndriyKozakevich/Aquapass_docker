@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getStaffToken } from "@/lib/auth";
 
 interface Sunbed {
   id: string;
@@ -33,21 +34,13 @@ export default function AdminSunbedsPage() {
   const [rangeRow, setRangeRow] = useState<string>("");
   const [rangeCount, setRangeCount] = useState<string>("");
 
-  // ДОПОМІЖНА ФУНКЦІЯ: Отримує токен для заголовків
-  const getAuthToken = () => {
-    // Перевірте, чи саме під ключем "token" ви зберігаєте JWT після логіну
-    return localStorage.getItem("token") || ""; 
-  };
-
   // Завантажити всі шезлонги
   const loadSunbeds = async () => {
     setIsLoading(true);
     setIsStatusMode(false);
     try {
       const res = await fetch(API_BASE, {
-        headers: {
-          "Authorization": `Bearer ${getAuthToken()}`
-        }
+        headers: { Authorization: `Bearer ${getStaffToken()}` },
       });
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data: Sunbed[] = await res.json();
@@ -67,9 +60,7 @@ export default function AdminSunbedsPage() {
     setIsStatusMode(true);
     try {
       const res = await fetch(`${API_BASE}/available?visitDate=${viewDate}`, {
-        headers: {
-          "Authorization": `Bearer ${getAuthToken()}`
-        }
+        headers: { Authorization: `Bearer ${getStaffToken()}` },
       });
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data: Sunbed[] = await res.json();
@@ -94,9 +85,9 @@ export default function AdminSunbedsPage() {
     try {
       const res = await fetch(API_BASE, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${getAuthToken()}`
+          Authorization: `Bearer ${getStaffToken()}`,
         },
         body: JSON.stringify({
           row: singleRow.trim().toUpperCase(),
@@ -139,14 +130,11 @@ export default function AdminSunbedsPage() {
     try {
       const rowParam = encodeURIComponent(rangeRow.trim().toUpperCase());
       const countParam = parseInt(rangeCount, 10);
-
       const res = await fetch(
         `${API_BASE}/range?row=${rowParam}&count=${countParam}`,
         {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${getAuthToken()}`
-          }
+          headers: { Authorization: `Bearer ${getStaffToken()}` },
         }
       );
 
@@ -171,9 +159,7 @@ export default function AdminSunbedsPage() {
     try {
       const res = await fetch(`${API_BASE}/${id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${getAuthToken()}`
-        }
+        headers: { Authorization: `Bearer ${getStaffToken()}` },
       });
 
       if (res.ok) {

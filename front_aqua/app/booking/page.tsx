@@ -1,17 +1,20 @@
 "use client";
 
 import * as signalR from "@microsoft/signalr";
+import Image from "next/image";
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 
 interface Sunbed {
-  id: string;
+  id?: string;
+  Id?: string;
   number: number;
   row: string;
   isAvailable?: boolean;
 }
 
 interface Tariff {
-  id: string;
+  id?: string;
+  Id?: string;
   name: string;
   serviceType: string;
   dayType: "Weekday" | "Weekend";
@@ -93,19 +96,27 @@ function getOrCreateHoldToken(): string {
   return token;
 }
 
+function getSunbedId(sunbed: Sunbed): string {
+  return sunbed.id ?? sunbed.Id ?? "";
+}
+
+function getTariffId(tariff: Tariff): string {
+  return tariff.id ?? tariff.Id ?? "";
+}
+
 export default function BookingPage() {
   const [visitDate, setVisitDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
   const [sunbeds, setSunbeds] = useState<Sunbed[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [selectedSunbeds, setSelectedSunbeds] = useState<SelectedSunbedItem[]>([]);
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
 
   // Стан для Redis Hold-блокування
-  const [holdToken, setHoldToken] = useState<string>("");
+  const [holdToken] = useState<string>(() => getOrCreateHoldToken());
   const [holdSecondsLeft, setHoldSecondsLeft] = useState<number | null>(null);
 
   const [customerFirstName, setCustomerFirstName] = useState<string>("");
@@ -119,10 +130,15 @@ export default function BookingPage() {
   const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
 
   const selectedSunbedsRef = useRef<SelectedSunbedItem[]>(selectedSunbeds);
-  selectedSunbedsRef.current = selectedSunbeds;
-
   const holdTokenRef = useRef<string>(holdToken);
-  holdTokenRef.current = holdToken;
+
+  useEffect(() => {
+    selectedSunbedsRef.current = selectedSunbeds;
+  }, [selectedSunbeds]);
+
+  useEffect(() => {
+    holdTokenRef.current = holdToken;
+  }, [holdToken]);
 
   const currentDayType: "Weekday" | "Weekend" = useMemo(() => {
     const day = new Date(visitDate).getDay();
@@ -143,42 +159,65 @@ export default function BookingPage() {
     (t) => t.serviceType === "Sunbed"
   );
 
-  const loadTariffs = async () => {
+  const fetchTariffs = async (): Promise<Tariff[] | null> => {
     try {
       const res = await fetch(`${API_BASE}/Tariffs`);
       if (res.ok) {
-        const data = await res.json();
-        setTariffs(data);
+        return res.json();
       }
     } catch (err) {
       console.error("Не вдалося завантажити тарифи", err);
     }
+    return null;
   };
 
+  const fetchSunbeds = useCallback(async (date: string, token: string): Promise<Sunbed[] | null> => {
+    const url = token
+      ? `${API_BASE}/Sunbed/available?visitDate=${date}&holdToken=${token}`
+      : `${API_BASE}/Sunbed/available?visitDate=${date}`;
+    const res = await fetch(url);
+    return res.ok ? res.json() : null;
+  }, []);
+
   const loadSunbeds = useCallback(async (date: string, token: string) => {
-    setIsLoading(true);
     try {
-      const url = token
-        ? `${API_BASE}/Sunbed/available?visitDate=${date}&holdToken=${token}`
-        : `${API_BASE}/Sunbed/available?visitDate=${date}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setSunbeds(data);
-      }
+      const data = await fetchSunbeds(date, token);
+      if (data) setSunbeds(data);
     } catch (err) {
       console.error("Помилка завантаження шезлонгів", err);
     } finally {
       setIsLoading(false);
     }
+  }, [fetchSunbeds]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    fetchTariffs().then((data) => {
+      if (!isCancelled && data) setTariffs(data);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
-  // Ініціалізація токена сесії
   useEffect(() => {
-    const token = getOrCreateHoldToken();
-    setHoldToken(token);
-    loadTariffs();
-  }, []);
+    let isCancelled = false;
+    if (holdToken) {
+      fetchSunbeds(visitDate, holdToken)
+        .then((data) => {
+          if (!isCancelled && data) setSunbeds(data);
+        })
+        .catch((err) => console.error("Помилка завантаження шезлонгів", err))
+        .finally(() => {
+          if (!isCancelled) setIsLoading(false);
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [visitDate, holdToken, fetchSunbeds]);
 
   // Підключення до SignalR WebSocket хабу
   useEffect(() => {
@@ -198,8 +237,8 @@ export default function BookingPage() {
     connection.on("SunbedStatusUpdated", (data: SunbedStatusEvent) => {
       setSunbeds((prevSunbeds) =>
         prevSunbeds.map((s) => {
-          const sId = s.id || (s as any).Id;
-          if (sId.toLowerCase() === data.sunbedId.toLowerCase()) {
+          const sId = getSunbedId(s);
+          if (sId && sId.toLowerCase() === data.sunbedId.toLowerCase()) {
             const isMyHold = Boolean(
               holdTokenRef.current &&
               data.heldByToken &&
@@ -223,7 +262,7 @@ export default function BookingPage() {
           return;
         }
         await connection.invoke("JoinDateGroup", visitDate);
-      } catch (err: any) {
+      } catch (err) {
         // Ігноруємо обрив від строгого режиму React під час розробки
         if (!isCancelled) {
           console.error("Помилка зв'язку з SignalR хабом:", err);
@@ -252,7 +291,7 @@ export default function BookingPage() {
     if (holdSecondsLeft <= 0) {
       if (selectedSunbedsRef.current.length > 0) {
         selectedSunbedsRef.current.forEach((item) => {
-          const sId = item.sunbed.id || (item.sunbed as any).Id;
+          const sId = getSunbedId(item.sunbed);
           fetch(`${API_BASE}/Sunbed/${sId}/release-hold`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -275,35 +314,14 @@ export default function BookingPage() {
     return () => clearInterval(interval);
   }, [holdSecondsLeft, visitDate, holdToken, loadSunbeds]);
 
-  // Зміна дати візиту
-  useEffect(() => {
-    if (selectedSunbedsRef.current.length > 0 && holdToken) {
-      selectedSunbedsRef.current.forEach((item) => {
-        const sId = item.sunbed.id || (item.sunbed as any).Id;
-        fetch(`${API_BASE}/Sunbed/${sId}/release-hold`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visitDate, holdToken }),
-        }).catch(console.error);
-      });
-    }
-
-    if (holdToken) {
-      loadSunbeds(visitDate, holdToken);
-    }
-    setSelectedSunbeds([]);
-    setExtraItems([]);
-    setHoldSecondsLeft(null);
-  }, [visitDate, holdToken, loadSunbeds]);
-
   // Клік по шезлонгу з Redis Hold Lock
   const toggleSunbed = async (sunbed: Sunbed) => {
-    if (!sunbed.isAvailable) return;
-
-    const sunbedId = sunbed.id || (sunbed as any).Id;
+    const sunbedId = getSunbedId(sunbed);
     const exists = selectedSunbeds.some(
-      (item) => (item.sunbed.id || (item.sunbed as any).Id) === sunbedId
+      (item) => getSunbedId(item.sunbed) === sunbedId
     );
+
+    if (!exists && !sunbed.isAvailable) return;
 
     if (exists) {
       try {
@@ -317,7 +335,7 @@ export default function BookingPage() {
       }
 
       const updated = selectedSunbeds.filter(
-        (item) => (item.sunbed.id || (item.sunbed as any).Id) !== sunbedId
+        (item) => getSunbedId(item.sunbed) !== sunbedId
       );
       setSelectedSunbeds(updated);
 
@@ -353,10 +371,29 @@ export default function BookingPage() {
     }
   };
 
+  const handleVisitDateChange = (date: string) => {
+    if (selectedSunbeds.length > 0 && holdToken) {
+      selectedSunbeds.forEach((item) => {
+        const sunbedId = getSunbedId(item.sunbed);
+        fetch(`${API_BASE}/Sunbed/${sunbedId}/release-hold`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visitDate, holdToken }),
+        }).catch(console.error);
+      });
+    }
+
+    setSelectedSunbeds([]);
+    setExtraItems([]);
+    setHoldSecondsLeft(null);
+    setIsLoading(true);
+    setVisitDate(date);
+  };
+
   const toggleTicketType = (sunbedId: string) => {
     setSelectedSunbeds((prev) =>
       prev.map((item) =>
-        (item.sunbed.id || (item.sunbed as any).Id) === sunbedId
+        getSunbedId(item.sunbed) === sunbedId
           ? { ...item, isChild: !item.isChild }
           : item
       )
@@ -396,7 +433,7 @@ export default function BookingPage() {
 
     extraItems.forEach((extra) => {
       const t = activeTariffs.find(
-        (tariff) => (tariff.id || (tariff as any).Id) === extra.tariffId
+        (tariff) => getTariffId(tariff) === extra.tariffId
       );
       if (t) sum += t.price * extra.quantity;
     });
@@ -422,10 +459,10 @@ export default function BookingPage() {
     const items: Array<{ tariffId: string; quantity: number; sunbedId?: string }> = [];
 
     selectedSunbeds.forEach((item) => {
-      const sId = item.sunbed.id || (item.sunbed as any).Id;
+      const sId = getSunbedId(item.sunbed);
       const entranceTariffId = item.isChild
-        ? childEntranceTariff.id || (childEntranceTariff as any).Id
-        : adultEntranceTariff.id || (adultEntranceTariff as any).Id;
+        ? getTariffId(childEntranceTariff)
+        : getTariffId(adultEntranceTariff);
 
       items.push({
         tariffId: entranceTariffId,
@@ -579,9 +616,12 @@ export default function BookingPage() {
                     </div>
 
                     {code && (
-                      <img
+                      <Image
                         src={`${API_BASE}/Tickets/${code}/qr`}
                         alt={`QR-${code}`}
+                        width={80}
+                        height={80}
+                        unoptimized
                         className="w-20 h-20 rounded-xl bg-white p-1 shadow-md shrink-0"
                       />
                     )}
@@ -633,7 +673,7 @@ export default function BookingPage() {
               type="date"
               value={visitDate}
               min={new Date().toISOString().split("T")[0]}
-              onChange={(e) => setVisitDate(e.target.value)}
+              onChange={(e) => handleVisitDateChange(e.target.value)}
               className="bg-slate-950 border border-slate-700 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-sky-500 [color-scheme:dark]"
             />
             <span className="text-xs px-3 py-1.5 rounded-lg bg-sky-950 text-sky-300 border border-sky-800 font-semibold">
@@ -698,9 +738,9 @@ export default function BookingPage() {
               ) : (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                   {sortedSunbeds.map((s, idx) => {
-                    const sunbedId = s.id || (s as any).Id || `sunbed-item-${idx}`;
+                    const sunbedId = getSunbedId(s) || `sunbed-item-${idx}`;
                     const isSelected = selectedSunbeds.some(
-                      (item) => (item.sunbed.id || (item.sunbed as any).Id) === sunbedId
+                      (item) => getSunbedId(item.sunbed) === sunbedId
                     );
                     const isAvailable = s.isAvailable ?? true;
 
@@ -742,7 +782,7 @@ export default function BookingPage() {
                   Додаткові послуги
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Бунгало або додаткові вхідні квитки без прив'язки до шезлонга
+                  Бунгало або додаткові вхідні квитки без прив&apos;язки до шезлонга
                 </p>
               </div>
 
@@ -750,7 +790,7 @@ export default function BookingPage() {
                 {activeTariffs
                   .filter((t) => t.serviceType !== "Sunbed")
                   .map((t, idx) => {
-                    const tariffId = t.id || (t as any).Id || `tariff-option-${idx}`;
+                    const tariffId = getTariffId(t) || `tariff-option-${idx}`;
                     const extra = extraItems.find((i) => i.tariffId === tariffId);
                     const count = extra?.quantity || 0;
 
@@ -810,7 +850,7 @@ export default function BookingPage() {
                     const entranceTariff = item.isChild ? childEntranceTariff : adultEntranceTariff;
                     const entrancePrice = entranceTariff?.price || 0;
                     const sunbedPrice = sunbedTariff?.price || 0;
-                    const sunbedId = item.sunbed.id || (item.sunbed as any).Id || `cart-sunbed-${idx}`;
+                    const sunbedId = getSunbedId(item.sunbed) || `cart-sunbed-${idx}`;
 
                     return (
                       <div
@@ -856,7 +896,7 @@ export default function BookingPage() {
 
                   {extraItems.map((extra, idx) => {
                     const t = activeTariffs.find(
-                      (tariff) => (tariff.id || (tariff as any).Id) === extra.tariffId
+                      (tariff) => getTariffId(tariff) === extra.tariffId
                     );
                     if (!t) return null;
 
@@ -891,7 +931,7 @@ export default function BookingPage() {
               <form onSubmit={handleCheckout} className="space-y-3 pt-1">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Ім'я</label>
+                    <label className="text-[11px] text-slate-400 block mb-1">Ім&apos;я</label>
                     <input
                       type="text"
                       required

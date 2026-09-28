@@ -15,11 +15,11 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
 
-    public AuthService(AppDbContext context, IConfiguration config, ILogger<AuthService> logger)
+    public AuthService(AppDbContext context, IConfiguration config, ILogger<AuthService>? logger = null)
     {
         _context = context;
         _config = config;
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance;
     }
 
     public async Task<StaffAuthResponseDto?> LoginAsync(StaffLoginDto dto)

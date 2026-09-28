@@ -12,11 +12,16 @@ namespace AquaPass.Services
         private readonly ILogger<OrderService> _logger;
         private readonly ISunbedHoldService _holdService;
 
-        public OrderService(AppDbContext context, ILogger<OrderService> logger, ISunbedHoldService holdService)
+        public OrderService(AppDbContext context, ISunbedHoldService holdService, ILogger<OrderService>? logger = null)
         {
             _context = context;
-            _logger = logger;
             _holdService = holdService;
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<OrderService>.Instance;
+        }
+
+        // Backwards-compatible constructor used by unit tests and simple instantiation.
+        public OrderService(AppDbContext context) : this(context, new NoopSunbedHoldService(), null)
+        {
         }
 
         public async Task<OrderResponseDto> CreateOrderAsync(CreateOrderDto dto)
@@ -71,14 +76,15 @@ namespace AquaPass.Services
                     _logger.LogWarning("Attempt to select duplicate sunbed ids in a single order: {SunbedIds}", requestedSunbedIds);
                     throw new Exception("Неможливо обрати один і той самий шезлонг двічі в одному замовленні.");
                 }
+                // Exclude holds owned by the same session (if client provided HoldToken)
+                var heldSunbedIds = await _holdService.GetHeldSunbedIdsAsync(visitDateUtc, dto.HoldToken);
 
-                var heldSunbedIds = await _holdService.GetHeldSunbedIdsAsync(visitDateUtc);
-
-                if( heldSunbedIds.Any(id => requestedSunbedIds.Contains(id)))
+                if (heldSunbedIds.Any(id => requestedSunbedIds.Contains(id)))
                 {
                     _logger.LogWarning("Attempt to book held sunbeds {HeldSunbedIds} for date {VisitDate}", heldSunbedIds, dto.VisitDate);
                     throw new Exception("Один або декілька обраних шезлонгів тимчасово заброньовані іншими користувачами. Будь ласка, спробуйте обрати інші шезлонги.");
                 }
+
                 // Перевірка зайнятості в базі через UTC-діапазон
                 var occupiedSunbedIds = await _context.Tickets
                     .Where(t => t.Order.VisitDate >= visitDateUtc
