@@ -9,7 +9,7 @@ public class SunbedHoldService : ISunbedHoldService
     private readonly IServer _server;
     private readonly ILogger<SunbedHoldService> _logger;
 
-    public SunbedHoldService(IConnectionMultiplexer redis, ILogger<SunbedHoldService> logger)
+    public SunbedHoldService(IConnectionMultiplexer redis, ILogger<SunbedHoldService>? logger = null)
     {
         _redis = redis.GetDatabase();
         var endpoint = redis.GetEndPoints().FirstOrDefault();
@@ -17,7 +17,7 @@ public class SunbedHoldService : ISunbedHoldService
             throw new InvalidOperationException("No Redis endpoints available. Check your Redis configuration.");
 
         _server = redis.GetServer(endpoint);
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<SunbedHoldService>.Instance;
     }
 
     private string BuildKey(Guid sunbedId, DateTime visitDate)
@@ -46,10 +46,12 @@ public class SunbedHoldService : ISunbedHoldService
             // Add to the set of held sunbeds for that date and ensure the set has at least the same TTL
             await _redis.SetAddAsync(setKey, sunbedId.ToString());
             var currentTtl = await _redis.KeyTimeToLiveAsync(setKey);
+
             if (currentTtl == null || currentTtl < duration)
             {
                 await _redis.KeyExpireAsync(setKey, duration);
             }
+
             _logger.LogInformation("Held sunbed {SunbedId} for visitDate {VisitDate} for duration {Duration} by session {SessionId}", sunbedId, visitDate, duration, holdToken);
         }
 
@@ -111,6 +113,7 @@ end";
             {
                 // Cleanup invalid entry
                 await _redis.SetRemoveAsync(setKey, m);
+
                 continue;
             }
 
@@ -121,6 +124,7 @@ end";
             {
                 // stale entry, remove from set
                 await _redis.SetRemoveAsync(setKey, m);
+
                 continue;
             }
 
@@ -131,6 +135,7 @@ end";
             else
             {
                 var token = await _redis.StringGetAsync(holdKey);
+
                 if (token != currentHoldToken)
                 {
                     heldIds.Add(id);

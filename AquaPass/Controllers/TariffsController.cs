@@ -33,6 +33,7 @@ namespace AquaPass.Controllers
         }
 
         // GET: api/tariffs/{id}
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

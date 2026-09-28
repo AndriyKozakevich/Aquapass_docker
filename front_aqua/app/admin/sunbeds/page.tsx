@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getStaffToken } from "@/lib/auth";
 
 interface Sunbed {
   id: string;
@@ -38,7 +39,9 @@ export default function AdminSunbedsPage() {
     setIsLoading(true);
     setIsStatusMode(false);
     try {
-      const res = await fetch(API_BASE);
+      const res = await fetch(API_BASE, {
+        headers: { Authorization: `Bearer ${getStaffToken()}` },
+      });
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data: Sunbed[] = await res.json();
       setSunbeds(data);
@@ -56,7 +59,9 @@ export default function AdminSunbedsPage() {
     setIsLoading(true);
     setIsStatusMode(true);
     try {
-      const res = await fetch(`${API_BASE}/available?visitDate=${viewDate}`);
+      const res = await fetch(`${API_BASE}/available?visitDate=${viewDate}`, {
+        headers: { Authorization: `Bearer ${getStaffToken()}` },
+      });
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data: Sunbed[] = await res.json();
       setSunbeds(data);
@@ -80,7 +85,10 @@ export default function AdminSunbedsPage() {
     try {
       const res = await fetch(API_BASE, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getStaffToken()}`,
+        },
         body: JSON.stringify({
           row: singleRow.trim().toUpperCase(),
           number: parseInt(singleNumber, 10),
@@ -122,11 +130,11 @@ export default function AdminSunbedsPage() {
     try {
       const rowParam = encodeURIComponent(rangeRow.trim().toUpperCase());
       const countParam = parseInt(rangeCount, 10);
-
       const res = await fetch(
         `${API_BASE}/range?row=${rowParam}&count=${countParam}`,
         {
           method: "POST",
+          headers: { Authorization: `Bearer ${getStaffToken()}` },
         }
       );
 
@@ -151,6 +159,7 @@ export default function AdminSunbedsPage() {
     try {
       const res = await fetch(`${API_BASE}/${id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${getStaffToken()}` },
       });
 
       if (res.ok) {

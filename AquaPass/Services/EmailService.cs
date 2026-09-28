@@ -11,15 +11,15 @@ namespace AquaPass.Services
         private readonly ISmtpClient? _injectedClient;
         private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IConfiguration config, ILogger<EmailService> logger) : this(config, null, logger)
+        public EmailService(IConfiguration config, ILogger<EmailService>? logger = null) : this(config, null, logger)
         {
         }
 
-        public EmailService(IConfiguration config, ISmtpClient? smtpClient, ILogger<EmailService> logger)
+        public EmailService(IConfiguration config, ISmtpClient? smtpClient, ILogger<EmailService>? logger = null)
         {
             _config = config;
             _injectedClient = smtpClient;
-            _logger = logger;
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<EmailService>.Instance;
         }
 
         public async Task SendOrderConfirmationAsync(string toEmail, string customerName, string orderNumber, byte[] pdfBytes)

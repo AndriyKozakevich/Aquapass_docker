@@ -39,6 +39,16 @@ export default function ScannerPage() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const isFetchingRef = useRef<boolean>(false);
 
+  // Допоміжна функція для формування заголовків авторизації
+  const getAuthHeaders = (): HeadersInit => {
+    // Змінено з "token" на "staff_token"
+    const token = typeof window !== "undefined" ? localStorage.getItem("staff_token") : null;
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
   // 1. Пошук ордера за QR-кодом (без зміни статусу квитка)
   const fetchOrderByCode = async (code: string) => {
     const cleanCode = code.trim();
@@ -50,7 +60,15 @@ export default function ScannerPage() {
     setActionSuccessMessage(null);
 
     try {
-      const res = await fetch(`${API_BASE}/Tickets/by-code/${cleanCode}/order`);
+      const res = await fetch(`${API_BASE}/Tickets/by-code/${cleanCode}/order`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (res.status === 401) {
+        setErrorMessage("Потрібна авторизація або сесія закінчилася. Будь ласка, увійдіть знову.");
+        return;
+      }
+
       const data = await res.json();
 
       if (res.ok) {
@@ -79,12 +97,18 @@ export default function ScannerPage() {
     try {
       const res = await fetch(`${API_BASE}/Tickets/${ticketCode}/validate`, {
         method: "POST",
+        headers: getAuthHeaders(),
       });
+
+      if (res.status === 401) {
+        setErrorMessage("Сесія закінчилася. Увійдіть у систему заново.");
+        return;
+      }
+
       const data = await res.json();
 
       if (res.ok) {
         setActionSuccessMessage(`Квиток ${ticketCode} успішно валідовано!`);
-        // Оновлюємо статус локально в стейті
         setCurrentOrder((prev) => {
           if (!prev) return null;
           return {
@@ -115,7 +139,14 @@ export default function ScannerPage() {
     try {
       const res = await fetch(`${API_BASE}/Tickets/orders/${currentOrder.orderId}/validate-all`, {
         method: "POST",
+        headers: getAuthHeaders(),
       });
+
+      if (res.status === 401) {
+        setErrorMessage("Сесія закінчилася. Увійдіть у систему заново.");
+        return;
+      }
+
       const data = await res.json();
 
       if (res.ok) {

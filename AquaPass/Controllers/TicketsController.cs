@@ -1,6 +1,7 @@
-﻿using AquaPass.Services;
+﻿using AquaPass.Extensions;
+using AquaPass.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AquaPass.Extensions;
 
 namespace AquaPass.Controllers;
 
@@ -17,6 +18,7 @@ public class TicketsController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize(Roles = "Admin,Cashier")]
     [HttpGet("by-code/{code}/order")]
     public async Task<IActionResult> GetOrderByTicketCode(string code)
     {
@@ -37,6 +39,7 @@ public class TicketsController : ControllerBase
         return Ok(order);
     }
 
+    [Authorize(Roles = "Admin,Cashier")]
     [HttpPost("orders/{orderId}/validate-all")]
     public async Task<IActionResult> ValidateAll(Guid orderId)
     {
@@ -57,6 +60,7 @@ public class TicketsController : ControllerBase
         return Ok(result);
     }
 
+    [Authorize(Roles = "Admin,Cashier")]
     [HttpPost("{code}/validate")]
     public async Task<IActionResult> Validate(string code)
     {
@@ -90,6 +94,7 @@ public class TicketsController : ControllerBase
         return Ok(result);
     }
 
+    [AllowAnonymous]
     [HttpGet("{code}/qr")]
     public async Task<IActionResult> GetQrCode(string code)
     {
@@ -110,6 +115,7 @@ public class TicketsController : ControllerBase
         return File(qrImage, "image/png");
     }
 
+    [AllowAnonymous]
     [HttpGet("{code}")]
     public async Task<IActionResult> GetByCode(string code)
     {

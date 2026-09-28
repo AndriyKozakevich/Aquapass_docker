@@ -8,11 +8,13 @@ namespace AquaPass.Services
     {
         private readonly AppDbContext _context;
         private readonly ISunbedHoldService _holdService;
+        private readonly ILogger<SunbedService> _logger;
 
-        public SunbedService(AppDbContext context, ISunbedHoldService holdService)
+        public SunbedService(AppDbContext context, ISunbedHoldService holdService, ILogger<SunbedService>? logger = null)
         {
             _context = context;
             _holdService = holdService as ISunbedHoldService ?? holdService;
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<SunbedService>.Instance;
         }
 
         #region Read Operations
@@ -168,6 +170,18 @@ namespace AquaPass.Services
         public async Task CreateRangeAsync(string row, int count)
         {
             var defaultZoneId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            // Ensure we don't create duplicates for numbers that already exist in the same row
+            var existingNumbers = await _context.Sunbeds
+                .Where(s => s.Row == row && s.Number >= 1 && s.Number <= count)
+                .Select(s => s.Number)
+                .ToListAsync();
+
+            if (existingNumbers.Any())
+            {
+                _logger.LogWarning("Attempt to create sunbed range in row {Row} 1..{Count} but existing numbers found {Existing}", row, count, existingNumbers);
+                throw new Exception($"Шезлонги з такими номерами у ряду {row} вже існують: {string.Join(", ", existingNumbers)}");
+            }
+
             var sunbeds = new List<Sunbed>();
 
             for (int i = 1; i <= count; i++)

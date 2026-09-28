@@ -15,11 +15,11 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
 
-    public AuthService(AppDbContext context, IConfiguration config, ILogger<AuthService> logger)
+    public AuthService(AppDbContext context, IConfiguration config, ILogger<AuthService>? logger = null)
     {
         _context = context;
         _config = config;
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthService>.Instance;
     }
 
     public async Task<StaffAuthResponseDto?> LoginAsync(StaffLoginDto dto)
@@ -46,10 +46,10 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Jwt:Key is not configured.");
 
         var issuer = _config["Jwt:Issuer"] ??
-            throw new InvalidOperationException("Jwt:Key is not configured.");
+            throw new InvalidOperationException("Jwt:Issuer is not configured.");
 
         var audience = _config["Jwt:Audience"] ??
-            throw new InvalidOperationException("Jwt:Key is not configured.");
+            throw new InvalidOperationException("Jwt:Audience is not configured.");
 
         var expires = DateTime.UtcNow.AddDays(7);
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));

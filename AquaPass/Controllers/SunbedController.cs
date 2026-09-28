@@ -165,6 +165,10 @@ namespace AquaPass.Controllers
         }
 
         #endregion
+
+        #region HOLD Operations
+
+        [AllowAnonymous]
         [HttpPost("{id:guid}/hold")]
         public async Task<IActionResult> HoldSunbed(Guid id, [FromBody] HoldSunbedRequest req)
         {
@@ -189,11 +193,11 @@ namespace AquaPass.Controllers
             }
 
             var dateGroup = req.VisitDate.ToString("yyyy-MM-dd");
-            await _hubContext.Clients.Group(dateGroup).SendAsync("SunbedStatusUpdated", new
+
+            await _hubContext.Clients.Group(dateGroup).SendAsync("SunbedStatusUpdated", new SunbedStatusUpdateDto
             {
-                sunbedId = id,
-                isAvailable = false,
-                heldByToken = req.HoldToken
+                SunbedId = id,
+                IsAvailable = false,
             });
 
             return Ok(new { message = "Шезлонг заблоковано на 5 хвилин", expiresMinutes = 5 });
@@ -222,6 +226,6 @@ namespace AquaPass.Controllers
 
             return Ok(new { message = "Блокування знято" });
         }
-
+        #endregion
     }
 }

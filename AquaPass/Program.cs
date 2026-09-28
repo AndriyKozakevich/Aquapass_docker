@@ -52,7 +52,6 @@ namespace AquaPass
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
                 builder.Services.AddScoped<SunbedService>();
                 builder.Services.AddScoped<TariffService>();
-                builder.Services.AddHttpClient<IMonobankPaymentService, MonobankPaymentService>();
                 builder.Services.AddScoped<IStaffService, StaffService>();
                 builder.Services.AddScoped<IAuthService, AuthService>();
                 builder.Services.AddScoped<ITicketService, TicketService>();
@@ -60,7 +59,9 @@ namespace AquaPass
                 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
                 builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
                 builder.Services.AddScoped<IEmailService, EmailService>();
-                
+                //builder.Services.AddHttpClient<IPaymentService, MonobankPaymentService>();   
+                builder.Services.AddHttpClient<IPaymentService, MockPaymentService>();
+
                 builder.Services.AddSingleton<ISunbedHoldService, SunbedHoldService>();
                 builder.Services.AddSignalR();
 
@@ -144,6 +145,7 @@ namespace AquaPass
                     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
                     await DbInitializer.SeedAdminAsync(context, config);
+                    await DbInitializer.SeedSunbedsAsync(context);
                 }
 
                 app.UseCors("AllowFrontend");
