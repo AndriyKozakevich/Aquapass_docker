@@ -33,12 +33,22 @@ export default function AdminSunbedsPage() {
   const [rangeRow, setRangeRow] = useState<string>("");
   const [rangeCount, setRangeCount] = useState<string>("");
 
+  // ДОПОМІЖНА ФУНКЦІЯ: Отримує токен для заголовків
+  const getAuthToken = () => {
+    // Перевірте, чи саме під ключем "token" ви зберігаєте JWT після логіну
+    return localStorage.getItem("token") || ""; 
+  };
+
   // Завантажити всі шезлонги
   const loadSunbeds = async () => {
     setIsLoading(true);
     setIsStatusMode(false);
     try {
-      const res = await fetch(API_BASE);
+      const res = await fetch(API_BASE, {
+        headers: {
+          "Authorization": `Bearer ${getAuthToken()}`
+        }
+      });
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data: Sunbed[] = await res.json();
       setSunbeds(data);
@@ -56,7 +66,11 @@ export default function AdminSunbedsPage() {
     setIsLoading(true);
     setIsStatusMode(true);
     try {
-      const res = await fetch(`${API_BASE}/available?visitDate=${viewDate}`);
+      const res = await fetch(`${API_BASE}/available?visitDate=${viewDate}`, {
+        headers: {
+          "Authorization": `Bearer ${getAuthToken()}`
+        }
+      });
       if (!res.ok) throw new Error(`Помилка ${res.status}`);
       const data: Sunbed[] = await res.json();
       setSunbeds(data);
@@ -80,7 +94,10 @@ export default function AdminSunbedsPage() {
     try {
       const res = await fetch(API_BASE, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${getAuthToken()}`
+        },
         body: JSON.stringify({
           row: singleRow.trim().toUpperCase(),
           number: parseInt(singleNumber, 10),
@@ -127,6 +144,9 @@ export default function AdminSunbedsPage() {
         `${API_BASE}/range?row=${rowParam}&count=${countParam}`,
         {
           method: "POST",
+          headers: {
+            "Authorization": `Bearer ${getAuthToken()}`
+          }
         }
       );
 
@@ -151,6 +171,9 @@ export default function AdminSunbedsPage() {
     try {
       const res = await fetch(`${API_BASE}/${id}`, {
         method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${getAuthToken()}`
+        }
       });
 
       if (res.ok) {
