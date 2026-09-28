@@ -145,6 +145,7 @@ namespace AquaPass
                     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
                     await DbInitializer.SeedAdminAsync(context, config);
+                    await DbInitializer.SeedSunbedsAsync(context);
                 }
 
                 app.UseCors("AllowFrontend");

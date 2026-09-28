@@ -31,4 +31,32 @@ public static class DbInitializer
         context.Staffs.Add(adminUser);
         await context.SaveChangesAsync();
     }
+
+    public static async Task SeedSunbedsAsync(AppDbContext context)
+    {
+        var sunbedsExist = await context.Sunbeds.AnyAsync();
+
+        if (sunbedsExist)
+        {
+            return;
+        }
+
+        var defaultZoneId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var sunbeds = new List<Sunbed>();
+
+        for (int i = 1; i <= 10; i++)
+        {
+            sunbeds.Add(new Sunbed
+            {
+                Id = Guid.NewGuid(),
+                Row = "A",
+                Number = i,
+                ZoneId = defaultZoneId,
+                Description = "Тестовий шезлонг"
+            });
+        }
+
+        await context.Sunbeds.AddRangeAsync(sunbeds);
+        await context.SaveChangesAsync();
+    }
 }
