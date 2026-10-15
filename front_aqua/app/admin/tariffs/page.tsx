@@ -47,6 +47,7 @@ export default function AdminTariffPanel() {
   const [isEditing, setIsEditing] = useState(false);
 
   // Стани UI
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
