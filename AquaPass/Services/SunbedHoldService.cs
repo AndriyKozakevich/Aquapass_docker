@@ -13,8 +13,11 @@ public class SunbedHoldService : ISunbedHoldService
     {
         _redis = redis.GetDatabase();
         var endpoint = redis.GetEndPoints().FirstOrDefault();
+
         if (endpoint == null)
+        {
             throw new InvalidOperationException("No Redis endpoints available. Check your Redis configuration.");
+        }
 
         _server = redis.GetServer(endpoint);
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<SunbedHoldService>.Instance;
@@ -23,12 +26,14 @@ public class SunbedHoldService : ISunbedHoldService
     private string BuildKey(Guid sunbedId, DateTime visitDate)
     {
         var d = visitDate.ToUniversalTime().Date;
+
         return $"hold:sunbed:{d:yyyyMMdd}:{sunbedId}";
     }
 
     private string BuildSetKey(DateTime visitDate)
     {
         var d = visitDate.ToUniversalTime().Date;
+
         return $"hold:sunbed:set:{d:yyyyMMdd}";
     }
         
@@ -82,7 +87,7 @@ end";
         var result = await _redis.ScriptEvaluateAsync(script, new RedisKey[] { key, setKey }, new RedisValue[] { holdToken, sunbedId.ToString() });
         try
         {
-            if (result.Type == ResultType.Integer && (int)result == 1)
+            if (result.Resp2Type == ResultType.Integer && (int)result == 1)
             {
                 _logger.LogInformation("Released hold for sunbed {SunbedId} on {VisitDate} by session {SessionId}", sunbedId, visitDate, holdToken);
             }
